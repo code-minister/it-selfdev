@@ -3,7 +3,7 @@
 ## Часть 1
 
 Использовались "Best practices" из следующих источников:
-- https://docs.docker.com/build/building/best-practices/#pin-base-image-versions
+- https://docs.docker.com/build/building/best-practices
 - https://habr.com/ru/companies/domclick/articles/546922/
 - https://github.com/hadolint/hadolint
 - Несветская беседа с парой нейронок
@@ -15,13 +15,45 @@
 
 ### "Плохой" Dockerfile
 
-![alt text](image.png)
+![alt text](images/image.png)
+
+![alt text](images/image-3.png)
+
+На всякий случай, для чистоты эксперимента, очищаем кэш:
+![alt text](images/image-1.png)
 
 
 ### "Хороший" Dockerfile
 
-![alt text](image-1.png)
+Здесь вывод более объемный, поэтому вставим только время сборки
+
+![alt text](images\image-2.png)
+
+
+![alt text](images\image-4.png)
+
+Можем заметить, что разница колоссальная. За счёт чего же удалось этого достичь?
 
 ### Best practices
 
-pass
+Немного отклоняясь от задания, буду сразу формулировать как good practices
+
+#### 1. Многоступенчатые сборки
+
+BAD
+```
+**FROM** golang:latest
+```
+
+GOOD
+```
+FROM golang:1.21-bullseye AS builder
+...
+
+FROM debian:bullseye-slim
+COPY --from=builder /app/cat-app .
+```
+
+Позволило значительно сократить используемое место, так как мы не тащим в итоговый контейнер инструменты сборки, ненужные системные утилиты, а берем только скомпилированный бинарник
+
+#### 2. 
