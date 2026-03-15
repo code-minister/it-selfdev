@@ -1,0 +1,29 @@
+FROM golang:1.21-bullseye AS builder
+
+WORKDIR /app
+
+COPY app.go .
+
+RUN CGO_ENABLED=0 GOOS=linux go build -o cat-app app.go
+
+FROM debian:bullseye-slim
+ 
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    figlet=2.2.* \
+    fortune-mod \
+    fortunes \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN useradd -r catuser
+
+COPY --from=builder /app/cat-app .
+
+RUN chown catuser:catuser cat-app
+USER catuser
+
+EXPOSE 5000
+
+CMD ["./cat-app"]
+

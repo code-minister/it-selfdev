@@ -1,0 +1,15 @@
+FROM golang:latest
+
+WORKDIR /app
+
+COPY . .
+
+RUN apt update
+RUN apt install -y figlet
+RUN apt install -y fortune-mod fortunes
+
+RUN go build -o cat-app app.go
+
+EXPOSE 5000
+
+CMD ["./cat-app"]
