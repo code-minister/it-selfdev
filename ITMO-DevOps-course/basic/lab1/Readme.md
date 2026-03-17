@@ -17,6 +17,8 @@
 
 ![alt text](images/image.png)
 
+![alt text](images/image-5.png)
+
 ![alt text](images/image-3.png)
 
 На всякий случай, для чистоты эксперимента, очищаем кэш:
@@ -25,10 +27,9 @@
 
 ### "Хороший" Dockerfile
 
-Здесь вывод более объемный, поэтому вставим только время сборки
-
 ![alt text](images/image-2.png)
 
+![alt text](images/image-6.png)
 
 ![alt text](images/image-4.png)
 
