@@ -16,11 +16,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fortunes \
     && rm -rf /var/lib/apt/lists/*
 
-RUN useradd -r catuser
+RUN groupadd -r catuser && useradd --no-log-init -r -g catuser catuser
 
 COPY --from=builder /app/cat-app .
 
-RUN chown catuser:catuser cat-app
+RUN chmod -R 755 /app/cat-app
 USER catuser
 
 EXPOSE 5000
