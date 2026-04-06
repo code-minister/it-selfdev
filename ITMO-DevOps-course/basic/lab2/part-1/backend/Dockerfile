@@ -6,9 +6,9 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
-
 RUN groupadd -r backend && useradd --no-log-init -r -g backend backend
+
+COPY . .
 
 RUN chmod -R 755 /app
 

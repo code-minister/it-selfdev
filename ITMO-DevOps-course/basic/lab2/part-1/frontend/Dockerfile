@@ -6,9 +6,9 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
-
 RUN groupadd -r frontend && useradd --no-log-init -r -g frontend frontend 
+
+COPY . .
 
 RUN chmod -R 755 /app
 
