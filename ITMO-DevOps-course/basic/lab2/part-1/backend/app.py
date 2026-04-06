@@ -20,8 +20,9 @@ def vote():
     data = request.json
     animal = data.get('animal')
     
-    if animal not in ['cats', 'dogs']:
+    if animal not in ['cats', 'dogs', 'giraffes']: 
         return jsonify({"error": "Invalid animal"}), 400
+
 
     try:
         conn = get_db_connection()

@@ -14,7 +14,7 @@ HTML_TEMPLATE = """
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Котики против Собачек</title>
+    <title>Котики, Собачки и Жирафы</title>
     <style>
         body { background-color: {{ bg_color }}; font-family: Arial, sans-serif; text-align: center; padding-top: 50px; transition: background-color 0.5s; }
         .btn { padding: 15px 30px; font-size: 20px; margin: 10px; cursor: pointer; border-radius: 8px; border: none; color: white; font-weight: bold;}
@@ -22,35 +22,38 @@ HTML_TEMPLATE = """
         .btn-cat:hover { background-color: #0b7dda; }
         .btn-dog { background-color: #4CAF50; }
         .btn-dog:hover { background-color: #46a049; }
+        .btn-giraffe { background-color: #FF9800; }  /* Оранжевый цвет для жирафов */
+        .btn-giraffe:hover { background-color: #e68a00; }
         .results { margin-top: 30px; font-size: 24px; }
         .results span { font-weight: bold; font-size: 30px;}
     </style>
 </head>
 <body>
-    <h1>Голосование: Котики против Собачек</h1>
+    <h1>Голосование: Выбери любимца</h1>
     
     <div>
         <button class="btn btn-cat" onclick="vote('cats')">🐱 Котики</button>
         <button class="btn btn-dog" onclick="vote('dogs')">🐶 Собачки</button>
+        <button class="btn btn-giraffe" onclick="vote('giraffes')">🦒 Жирафы</button>
     </div>
 
     <div class="results">
         <p>Котики: <span id="cats-count">0</span></p>
         <p>Собачки: <span id="dogs-count">0</span></p>
+        <p>Жирафы: <span id="giraffes-count">0</span></p>
     </div>
 
     <script>
-        // Функция запроса результатов
         function loadResults() {
             fetch('/api/results')
                 .then(res => res.json())
                 .then(data => {
-                    document.getElementById('cats-count').innerText = data.cats !== undefined ? data.cats : 'err';
-                    document.getElementById('dogs-count').innerText = data.dogs !== undefined ? data.dogs : 'err';
+                    document.getElementById('cats-count').innerText = data.cats !== undefined ? data.cats : '0';
+                    document.getElementById('dogs-count').innerText = data.dogs !== undefined ? data.dogs : '0';
+                    document.getElementById('giraffes-count').innerText = data.giraffes !== undefined ? data.giraffes : '0';
                 }).catch(err => console.error("Error loading results:", err));
         }
 
-        // Функция отправки голоса
         function vote(animal) {
             fetch('/api/vote', {
                 method: 'POST',
@@ -59,7 +62,6 @@ HTML_TEMPLATE = """
             }).then(() => loadResults());
         }
 
-        // Загружаем результаты при открытии страницы и обновляем каждые 2 секунды
         loadResults();
         setInterval(loadResults, 2000);
     </script>

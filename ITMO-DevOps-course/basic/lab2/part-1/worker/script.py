@@ -23,34 +23,39 @@ def generate_report():
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Получаем данные из базы
         cur.execute("SELECT animal_type, votes_count FROM votes;")
         rows = cur.fetchall()
         
-        # Преобразуем результат в удобный словарь
         results = {row[0]: row[1] for row in rows}
         cats_votes = results.get('cats', 0)
         dogs_votes = results.get('dogs', 0)
+        giraffes_votes = results.get('giraffes', 0) # Достаем жирафов
         
         cur.close()
         conn.close()
 
-        # Определяем победителя
-        if cats_votes > dogs_votes:
-            winner = "Котики"
-        elif dogs_votes > cats_votes:
-            winner = "Собачки"
+        # Красивая логика поиска победителя из любого количества участников
+        score_dict = {
+            'Котики': cats_votes, 
+            'Собачки': dogs_votes, 
+            'Жирафы': giraffes_votes
+        }
+        
+        # Находим максимальное количество голосов
+        max_votes = max(score_dict.values())
+        
+        # Ищем всех, у кого столько же голосов (на случай ничьей)
+        winners =[animal for animal, votes in score_dict.items() if votes == max_votes]
+        
+        if len(winners) == 1:
+            winner = winners[0]
         else:
-            winner = "Ничья"
+            winner = "Ничья между: " + " и ".join(winners)
 
-        # Формируем строку отчета
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        report_line = f"[{now}] Победитель: {winner}. Счет: {cats_votes}-{dogs_votes}\n"
+        report_line = f"[{now}] Победитель: {winner}. Счет (К-С-Ж): {cats_votes}-{dogs_votes}-{giraffes_votes}\n"
 
-        # Убеждаемся, что папка существует (на случай локального тестирования)
         os.makedirs(os.path.dirname(REPORT_FILE_PATH), exist_ok=True)
-
-        # Открываем файл в режиме дозаписи ('a' - append)
         with open(REPORT_FILE_PATH, 'a', encoding='utf-8') as f:
             f.write(report_line)
 
@@ -58,11 +63,4 @@ def generate_report():
 
     except Exception as e:
         print(f"Ошибка при генерации отчета: {e}", file=sys.stderr)
-        # Если произошла ошибка (например, БД недоступна), завершаем скрипт с кодом 1.
-        # Kubernetes увидит ошибку и пометит запуск CronJob как Failed.
         sys.exit(1)
-
-if __name__ == '__main__':
-    generate_report()
-    # Успешное завершение работы
-    sys.exit(0)
