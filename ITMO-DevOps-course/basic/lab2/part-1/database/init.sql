@@ -4,4 +4,4 @@ CREATE TABLE IF NOT EXISTS votes (
 );
 
 
-INSERT INTO votes VALUES ("cats"), ("dogs"), ("giraffe") ON CONFLICT (animal_type) DO NOTHING;
+INSERT INTO votes VALUES ('cats', 0), ('dogs',  0), ('giraffe', 0) ON CONFLICT (animal_type) DO NOTHING;

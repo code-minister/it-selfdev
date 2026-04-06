@@ -1,0 +1,57 @@
+services:
+  backend:
+    build: ./backend
+    image: c0demin1ster/voting-backend:v1
+    container_name: lab2_backend
+    environment:
+      DB_HOST: db
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+    ports:
+    - "8080:8080"
+    depends_on:
+    - db
+  frontend:
+    build: ./frontend
+    image: c0demin1ster/voting-frontend:v1
+    container_name: lab2_frontend
+    environment:
+      BACKEND_URL: http://backend:8080
+      BACKGROUND_COLOR: "#e0f7fa"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+  worker:
+    build: ./worker
+    image: c0demin1ster/voting-worker:v1
+    container_name: lab2_worker
+    environment: 
+      DB_HOST: db
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+    volumes:
+    - ./reports:/app/reports
+    depends_on:
+    - db
+  
+  db:
+    image: postgres:15-alpine
+    container_name: lab2_db
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - db-data:/var/lib/postgresql/data
+    ports:
+    - "5432:5432"
+
+volumes:
+  db-data:
+      

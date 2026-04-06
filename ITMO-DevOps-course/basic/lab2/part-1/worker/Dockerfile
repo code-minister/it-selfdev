@@ -1,4 +1,4 @@
-FROM python:3.13-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
@@ -10,7 +10,7 @@ RUN groupadd -r worker && useradd -r -g worker worker
 
 COPY . .
 
-RUN chmod -r 755 /app
+RUN chmod -R 755 /app
 
 RUN mkdir -p /app/reports && chown worker:worker /app/reports 
 
