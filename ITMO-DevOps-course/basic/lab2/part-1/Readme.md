@@ -15,13 +15,23 @@
 ### Шаг 2:Деплой 
 Благодаря тому, что в compose.yaml мы используем атрибуты build + image, мы можем запушить необходимые образы в наш реестр командой ```docker compose push```
 
-### Шаг 3.1: Пишем манифесты - Secret
+### Шаг 3.0: Пишем манифесты - Namespace
+Для создания изолированных сред на одном узле применяются Namespaces. И, хотя их использование оправдано для разделения разных команд, групп или сообществ с разными политиками и ресурсами, почему бы не пощупать его тоже:
+```
+apiVersion: v1
+kind: Namespace
+metadata:
+  test-environment
+```
+
+### Шаг 3.1: Secret
 Для начала в кластер нужно перенести необходимые секретные данные, для чего используется сущность Secret. Файл  `db-secret.example`:
 ```
 apiVersion: v1
 kind: Secret
 metadata: 
   name: postgres-secret
+  namespace: dev-environment
 type: Opaque
 data:
   DB_USER: YWRtaW4=
@@ -29,8 +39,21 @@ data:
   DB_NAME: dm90aW5nX2FwcA==
 ```
 
-### Шаг 3.2:
+### Шаг 3.2: ConfigMap
+Используется для хранения разных переменных значений и настроек, тут всё просто:
+```
+apiVersion: v1
+kind: ConfigMap
+metadata: 
+  name: app-config
+  namespace: dev-environment
+data:
+  DB_PORT: 5432
+  BACKGROUND_COLOR: "lightblue"
+  BACKEND_URL: "http://backend-service:8080"
+```
 
+### Шаг 3.3: 
 
 
 # Источники
