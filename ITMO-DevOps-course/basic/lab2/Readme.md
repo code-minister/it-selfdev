@@ -208,9 +208,57 @@ spec:
       port: 80
       targetPort: 3000
       nodePort: 30000
-
 ```
 
+### Шаг 3.6: CronJob и PVC
+Тут занкомимся с CronJob, у нас будет запускать под, который каждые 5 минут будет создавать отчет.
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: reports-pvc
+  namespace: voting-app
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: analytics-worker
+  namespace: dev-environment
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid 
+  successfulJobsHistoryLimit: 3
+  
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure 
+          containers:
+          - name: worker-app
+            image: c0demin1ster/voting-worker
+            
+            envFrom:
+            - secretRef:
+                name: postgres-secret
+            - configMapRef:
+                name: app-config
+            
+            volumeMounts:
+            - name: reports-data
+              mountPath: /app/reports
+          volumes:
+          - name: reports-data
+            persistentVolumeClaim:
+              claimName: reports-pvc
+```
 
 
 
