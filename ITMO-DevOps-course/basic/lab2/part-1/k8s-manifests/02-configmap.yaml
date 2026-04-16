@@ -5,5 +5,6 @@ metadata:
   namespace: dev-environment
 data:
   DB_PORT: "5432"
+  DB_HOST: "db-service"
   BACKGROUND_COLOR: "lightblue"
   BACKEND_URL: "http://backend-service:8080"
