@@ -55,7 +55,7 @@ data:
   BACKEND_URL: "http://backend-service:8080"
 ```
 
-### Шаг 3.3: 
+### Шаг 3.3: DB, PVC and Service
 При созданиии данного манифеста я решил объеденить всё, что касается БД, чтобы не дробить логику слишком сильно. Первым идет StatefulSet, если не ошибаюсь, он полезен при созадании кластеров СУБД, а также повышает надежность данных. Здесь же создаются шалон PVC, который находит или же создают новый PV для конкретной реплики БД. Потом создаётся Headless Service, который не имеет встроенной балансировки и позволяет обращаться к каждому поду сета отдельно. Это важно если у нас есть напрмер разделеие на ReadWrite, ReadOnly etc.
 ```yaml
 apiVersion: apps/v1
@@ -116,6 +116,57 @@ spec:
 ```
 
 
+### Шаг 3.4: Backend and Service
+
+Тут мы наконец создаём Deployment для нашего бекенда и сервис к нему, подгружем все переменные окруения.
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-backend
+  namespace: dev-environmet
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+    template:
+      metadata:
+        labels:
+          app: backend
+      spec:
+        containers:
+        - name: backend-pod
+          image: c0demin1ster/voting-backend
+          ports:
+          - containerPort: 8080
+          envFrom:
+          - secretRef:
+              name: postgres-secret
+          - configMapRef:
+              name: app-config
+          
+
+---
+apiVersion: v1
+kind: Service
+metadata: 
+  name: backend-service
+  namespace: dev-environment
+spec:
+  type: ClusterIP  
+  selector:
+    app: backend
+  ports:
+  - protocol: TCP
+    port: 8080      
+    targetPort: 8080 
+
+```
+
+
+
+### Шаг 3.5: 
 
 
 

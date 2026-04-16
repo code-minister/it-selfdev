@@ -5,4 +5,37 @@ metadata:
   namespace: dev-environmet
 spec:
   replicas: 2
-  containers:
+  selector:
+    matchLabels:
+      app: backend
+    template:
+      metadata:
+        labels:
+          app: backend
+      spec:
+        containers:
+        - name: backend-pod
+          image: c0demin1ster/voting-backend
+          ports:
+          - containerPort: 8080
+          envFrom:
+          - secretRef:
+              name: postgres-secret
+          - configMapRef:
+              name: app-config
+          
+
+---
+apiVersion: v1
+kind: Service
+metadata: 
+  name: backend-service
+  namespace: dev-environment
+spec:
+  type: ClusterIP  
+  selector:
+    app: backend
+  ports:
+  - protocol: TCP
+    port: 8080      
+    targetPort: 8080 
