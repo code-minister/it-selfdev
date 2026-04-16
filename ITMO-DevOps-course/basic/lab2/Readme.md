@@ -51,6 +51,7 @@ metadata:
   namespace: dev-environment
 data:
   DB_PORT: "5432"
+  DB_HOST: "db-service"
   BACKGROUND_COLOR: "lightblue"
   BACKEND_URL: "http://backend-service:8080"
 ```
@@ -75,7 +76,6 @@ spec:
         app: postgres
     spec:
       containers:
-      containers:
       - name: postgres
         image: postgres:15
         ports:
@@ -96,6 +96,18 @@ spec:
               secretKeyRef:
                 name: postgres-secret
                 key: DB_NAME
+        volumeMounts:
+        - name: db-data
+          mountPath: /var/lib/postgresql/data
+        - name: init-script
+          mountPath: /docker-entrypoint-initdb.d/init.sql
+          subPath: init.sql
+      
+      volumes:
+      - name: init-script
+        configMap:
+          name: db-init-script
+              
   volumeClaimTemplates:
     - metadata:
         name: db-data
@@ -104,10 +116,6 @@ spec:
         resources: 
           requests:
             storage: 1Gi
-
-
-
-
 
 ---
 apiVersion: v1
@@ -209,7 +217,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: frontend-service
-  namespace: dev-environmet
+  namespace: dev-environment
 spec:
   type: NodePort
   selector:
@@ -273,6 +281,44 @@ spec:
 ```
 
 
+### Шаг 3.6: фикс
+Понимаем, что мы создаем пустое хранилище без БД и быстренько добавляем `db-init-configmap.yaml`
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-init-script
+  namespace: dev-environment
+data:
+  init.sql: |
+    CREATE TABLE IF NOT EXISTS votes (
+        animal_type VARCHAR(50) PRIMARY KEY,
+        votes_count INTEGER DEFAULT 0
+    );
+    INSERT INTO votes VALUES ('cats', 0), ('dogs',  0), ('giraffes', 0) ON CONFLICT (animal_type) DO NOTHING;
+```
+
+### Шаг 4: Применение манифестов и запуск
+Выполняем команды (не с первого раза)
+```bash
+minikube start
+kubectl apply -f k8s-manifests/
+minikube service frontend-service -n dev-environment
+```
+![alt text](images/image.png)
+
+![alt text](images/image-1.png)
+
+![alt text](images/image-2.png)
+
+Объекты кластера можно посмотреть командой `kubectl get all -n dev-environment`:
+![alt text](images/image-3.png)
+
+И всё действительно работает:
+![alt text](images/image-4.png)
+
+
+## Часть 2
 
 # Источники
 - https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
