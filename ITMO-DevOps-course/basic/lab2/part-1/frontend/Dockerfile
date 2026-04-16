@@ -14,4 +14,6 @@ RUN chmod -R 755 /app
 
 USER frontend
 
+EXPOSE 3000
+
 CMD ["python", "app.py"]

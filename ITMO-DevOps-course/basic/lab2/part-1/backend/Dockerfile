@@ -14,4 +14,6 @@ RUN chmod -R 755 /app
 
 USER backend
 
+EXPOSE 8080
+
 CMD ["python", "app.py"]

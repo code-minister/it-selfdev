@@ -166,7 +166,50 @@ spec:
 
 
 
-### Шаг 3.5: 
+### Шаг 3.5: Fronted and NodePort
+Тут всё то же самое, с той лишь разницей что для доступа из вне тип сервиса укажем NodePort
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-frontend
+  namespace: dev-environmet
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend
+  tamplate:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend-pod
+        image: c0demin1ster/voting-frontend
+        ports:
+          - containerPort: 3000
+        envFrom:
+          - configMapRef:
+            name: app-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fronetnd-service
+  namespace: dev-environmet
+spec:
+  type: NodePort
+  selector:
+    app: frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+      nodePort: 30000
+
+```
 
 
 
