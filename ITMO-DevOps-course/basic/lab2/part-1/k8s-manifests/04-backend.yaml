@@ -2,27 +2,27 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: app-backend
-  namespace: dev-environmet
+  namespace: dev-environment
 spec:
   replicas: 2
   selector:
     matchLabels:
       app: backend
-    template:
-      metadata:
-        labels:
-          app: backend
-      spec:
-        containers:
-        - name: backend-pod
-          image: c0demin1ster/voting-backend
-          ports:
-          - containerPort: 8080
-          envFrom:
-          - secretRef:
-              name: postgres-secret
-          - configMapRef:
-              name: app-config
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend-pod
+        image: c0demin1ster/voting-backend:v1
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - secretRef:
+            name: postgres-secret
+        - configMapRef:
+            name: app-config
           
 
 ---

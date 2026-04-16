@@ -2,31 +2,31 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: app-frontend
-  namespace: dev-environmet
+  namespace: dev-environment
 spec:
   replicas: 2
   selector:
     matchLabels:
       app: frontend
-  tamplate:
+  template:
     metadata:
       labels:
         app: frontend
     spec:
       containers:
       - name: frontend-pod
-        image: c0demin1ster/voting-frontend
+        image: c0demin1ster/voting-frontend:v1
         ports:
           - containerPort: 3000
         envFrom:
           - configMapRef:
-            name: app-config
+              name: app-config
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: fronetnd-service
+  name: frontend-service
   namespace: dev-environmet
 spec:
   type: NodePort

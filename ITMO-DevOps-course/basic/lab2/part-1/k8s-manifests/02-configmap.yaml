@@ -4,6 +4,6 @@ metadata:
   name: app-config
   namespace: dev-environment
 data:
-  DB_PORT: 5432
+  DB_PORT: "5432"
   BACKGROUND_COLOR: "lightblue"
   BACKEND_URL: "http://backend-service:8080"

@@ -23,7 +23,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  test-environment
+  name: dev-environment
 ```
 
 ### Шаг 3.1: Secret
@@ -50,13 +50,13 @@ metadata:
   name: app-config
   namespace: dev-environment
 data:
-  DB_PORT: 5432
+  DB_PORT: "5432"
   BACKGROUND_COLOR: "lightblue"
   BACKEND_URL: "http://backend-service:8080"
 ```
 
 ### Шаг 3.3: DB, PVC and Service
-При созданиии данного манифеста я решил объеденить всё, что касается БД, чтобы не дробить логику слишком сильно. Первым идет StatefulSet, если не ошибаюсь, он полезен при созадании кластеров СУБД, а также повышает надежность данных. Здесь же создаются шалон PVC, который находит или же создают новый PV для конкретной реплики БД. Потом создаётся Headless Service, который не имеет встроенной балансировки и позволяет обращаться к каждому поду сета отдельно. Это важно если у нас есть напрмер разделеие на ReadWrite, ReadOnly etc.
+При созданиии данного манифеста я решил объеденить всё, что касается БД, чтобы не дробить логику слишком сильно. Первым идет StatefulSet, если не ошибаюсь, он полезен при созадании кластеров СУБД, а также повышает надежность данных. Здесь же создаются шалон PVC, который находит или же создают новый PV для конкретной реплики БД. Потом создаётся Headless Service, который не имеет встроенной балансировки и позволяет обращаться к каждому поду сета отдельно. Это важно если у нас есть напрмер разделеие на ReadWrite, ReadOnly etc. P.S. Впоследствии пришлось сделать явный маппинг переменых окружения
 ```yaml
 apiVersion: apps/v1
 kind: StatefulSet
@@ -75,16 +75,27 @@ spec:
         app: postgres
     spec:
       containers:
+      containers:
       - name: postgres
         image: postgres:15
         ports:
         - containerPort: 5432
-        envFrom:
-        - secretRef:
-            name: postgres-secret
-        volumeMounts:
-        - name: db-data
-          mountPath: /var/lib/postgresql/data
+        env:
+          - name: POSTGRES_USER
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: DB_USER
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: DB_PASSWORD
+          - name: POSTGRES_DB
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: DB_NAME
   volumeClaimTemplates:
     - metadata:
         name: db-data
@@ -124,27 +135,27 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: app-backend
-  namespace: dev-environmet
+  namespace: dev-environment
 spec:
   replicas: 2
   selector:
     matchLabels:
       app: backend
-    template:
-      metadata:
-        labels:
-          app: backend
-      spec:
-        containers:
-        - name: backend-pod
-          image: c0demin1ster/voting-backend
-          ports:
-          - containerPort: 8080
-          envFrom:
-          - secretRef:
-              name: postgres-secret
-          - configMapRef:
-              name: app-config
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend-pod
+        image: c0demin1ster/voting-backend:v1
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - secretRef:
+            name: postgres-secret
+        - configMapRef:
+            name: app-config
           
 
 ---
@@ -173,31 +184,31 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: app-frontend
-  namespace: dev-environmet
+  namespace: dev-environment
 spec:
   replicas: 2
   selector:
     matchLabels:
       app: frontend
-  tamplate:
+  template:
     metadata:
       labels:
         app: frontend
     spec:
       containers:
       - name: frontend-pod
-        image: c0demin1ster/voting-frontend
+        image: c0demin1ster/voting-frontend:v1
         ports:
           - containerPort: 3000
         envFrom:
           - configMapRef:
-            name: app-config
+              name: app-config
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: fronetnd-service
+  name: frontend-service
   namespace: dev-environmet
 spec:
   type: NodePort
@@ -208,6 +219,7 @@ spec:
       port: 80
       targetPort: 3000
       nodePort: 30000
+
 ```
 
 ### Шаг 3.6: CronJob и PVC
@@ -217,7 +229,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: reports-pvc
-  namespace: voting-app
+  namespace: dev-environment
 spec:
   accessModes:
     - ReadWriteOnce
@@ -243,7 +255,7 @@ spec:
           restartPolicy: OnFailure 
           containers:
           - name: worker-app
-            image: c0demin1ster/voting-worker
+            image: c0demin1ster/voting-worker:v1
             
             envFrom:
             - secretRef:
