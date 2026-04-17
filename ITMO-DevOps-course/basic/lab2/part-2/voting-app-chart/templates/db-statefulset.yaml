@@ -45,4 +45,11 @@ spec:
       - name: init-script
         configMap:
           name: db-init-script
-              
+  volumeClaimTemplates:
+    - metadata:
+        name: db-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources: 
+          requests:
+            storage: {{ .Values.database.storageSize}}

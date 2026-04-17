@@ -1,0 +1,14 @@
+backend:
+  replicaCount: 2
+  image:
+    repository: c0demin1ster/voting-backend
+    tag: "v1"
+
+frontend:
+  replicaCount: 2
+  image:
+    repository: c0demin1ster/voting-frontend
+    tag: "v1"
+
+database:
+  storageSize: "1Gi"

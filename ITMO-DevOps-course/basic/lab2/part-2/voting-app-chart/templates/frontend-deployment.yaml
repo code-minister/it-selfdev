@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: app-frontend
 spec:
-  replicas: 2
+  replicas: {{ .Values.frontend.replicaCount }}
   selector:
     matchLabels:
       app: frontend
@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: frontend-pod
-        image: c0demin1ster/voting-frontend:v1
+        image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag}}"
         ports:
           - containerPort: 3000
         envFrom:
