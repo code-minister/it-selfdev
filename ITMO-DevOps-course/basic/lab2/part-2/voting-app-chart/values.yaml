@@ -6,6 +6,7 @@ backend:
 
 frontend:
   replicaCount: 2
+  nodePort: 30050
   image:
     repository: c0demin1ster/voting-frontend
     tag: "v1"

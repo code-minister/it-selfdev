@@ -1,6 +1,4 @@
-до выходных доделаю, честно 🙏
-
-# Лабораторная №1
+# Лабораторная №2
 
 > Работа выполнялась на Minikube, установленный на WSL
 
@@ -299,7 +297,7 @@ data:
 ```
 
 ### Шаг 4: Применение манифестов и запуск
-Выполняем команды (не с первого раза)
+Выполняем команды
 ```bash
 minikube start
 kubectl apply -f k8s-manifests/
@@ -319,6 +317,52 @@ minikube service frontend-service -n dev-environment
 
 
 ## Часть 2
+### Шаг 1: Нарезка манифестов
+Согласно Best Practices хелма каждое определение ресурса дожно быть в собственном шаблоне, а также содержать название этого ресурса в названии написанном dashed notation (через тире). Поэтому нужно будет разделить манифесты, которые мы ранее объеденили для удобства. Кроме того, везде следует удалить определение `namespace`
+
+### Шаг 2: Создаем values.yaml
+Записываем в файлие все атрибуты, которые мы хотим динамически изменять:
+```yaml
+backend:
+  replicaCount: 2
+  image:
+    repository: c0demin1ster/voting-backend
+    tag: "v1"
+
+frontend:
+  replicaCount: 2
+  nodePort: 30001
+  image:
+    repository: c0demin1ster/voting-frontend
+    tag: "v1"
+
+database:
+  storageSize: "1Gi"
+```
+
+Проверяем всё комнадой `helm template my-test-realise ./voting-app-chart`
+
+### Шаг 3: Деплоим в кластер
+Выполняем команду `helm install my-voting-release ./voting-app-chart -n voting-helm --create-namespace`, деплоя всё в тот же кластер, но в другой namespace
+![alt text](images/image-5.png)
+
+### Шаг 4. Апгрейдим релиз
+Для теста просто обновим nodePort в values.yaml на 30050, а затем применим изменения с помощью `helm upgrade my-voting-release ./voting-app-chart -n voting-helm`
+
+![alt text](images/image-6.png)
+
+Проверяем всё командой `helm history my-voting-release -n voting-helm`
+![alt text](images/image-7.png)
+
+
+### Топ приичн испльзоать helm
+1. Шаблонизация и избавление от копирования
+2. Релизы и управление версиями
+3. Удобство распространения готовых решений
+
+
+# Вместо вывода
+По сравнению с докером тут пришлось обработать гароздо больший объём информации, чтобы добросовестно ознакомиться даже с базовыми ресурсами и практиками, но теперь и это кажется довольно просто. Зато WSL ни разу не сломалась ))
 
 # Источники
 - https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
@@ -329,4 +373,4 @@ minikube service frontend-service -n dev-environment
 - https://kubernetes.io/docs/concepts/storage/persistent-volumes/
 - https://kubernetes.io/docs/concepts/services-networking/service/
 - https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/
-- 
+- https://helm.sh/docs/chart_best_practices/
