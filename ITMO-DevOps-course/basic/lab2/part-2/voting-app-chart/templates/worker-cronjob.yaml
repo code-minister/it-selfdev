@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: analytics-worker
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid 
+  successfulJobsHistoryLimit: 3
+  
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure 
+          containers:
+          - name: worker-app
+            image: c0demin1ster/voting-worker:v1
+            
+            envFrom:
+            - secretRef:
+                name: postgres-secret
+            - configMapRef:
+                name: app-config
+            
+            volumeMounts:
+            - name: reports-data
+              mountPath: /app/reports
+          volumes:
+          - name: reports-data
+            persistentVolumeClaim:
+              claimName: reports-pvc
