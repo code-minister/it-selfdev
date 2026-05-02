@@ -48,6 +48,17 @@ sudo ln -s /home/arthur/it-selfdev/ITMO-DevOps-course/basic /etc/nginx/nginx.con
 2. В начале конфигурационного файла записываем `user arthur;`, чтобы у процесса был доступ к файлам директории.
 
 
+### Шаг 2: Настройка переадресации
+> Пока что комментируем базовые настройки
+Создаем контекст директиву http, в её контексте - server. Это будет наш первый виртуальный дефолтный сервер для порта 80, который редиректит на https по тому же URL
+```nginx
+    server {
+        listen 80 default_server;
+        server_name _;
+        return 301 https://$host/$request_uri;
+        }
+```
+
 # Вместо вывода
 Во-первых, я [настроил](https://code.visualstudio.com/docs/languages/markdown#_inserting-images-and-links-to-files) чтобы при вставке картинки автоматически падали в директорию images. И я очень рад.
 Во-вторых ...
