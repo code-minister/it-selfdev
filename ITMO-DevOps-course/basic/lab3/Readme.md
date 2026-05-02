@@ -59,6 +59,26 @@ sudo ln -s /home/arthur/it-selfdev/ITMO-DevOps-course/basic /etc/nginx/nginx.con
         }
 ```
 
+### Шаг 3: Создание SSL сертификата и настройка HTTPS
+Так как мы работаем на локалке, воспользуемся утилитой openssl
+```bash
+sudo mkdir -p /etc/ssl/private /etc/ssl/certs
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/nginx-selfsigned.key -out /etc/ssl/certs/nginx-selfsigned.crt
+```
+
+Далее настраиваем https:
+```nginx
+server {
+        listen 443 ssl;
+        ssl_certificate     /etc/ssl/certs/nginx-selfsigned.crt;
+        ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key;
+    }
+```
+
+Эти настройки будут применятся ко всем создаваемым далее серверам.
+
+
+
 # Вместо вывода
 Во-первых, я [настроил](https://code.visualstudio.com/docs/languages/markdown#_inserting-images-and-links-to-files) чтобы при вставке картинки автоматически падали в директорию images. И я очень рад.
 Во-вторых ...
