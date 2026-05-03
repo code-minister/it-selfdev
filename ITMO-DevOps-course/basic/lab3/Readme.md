@@ -96,6 +96,42 @@ http {
 
 Эти настройки будут применятся ко всем создаваемым далее серверам.
 
+### Шаг 4.1: frontend
+
+Чёт всё запутано. Но вроде, так как у нас один файл index.html, сделаем вот так:
+```nginx
+    server {
+        listen 443 ssl;
+        server_name portfolio.local;
+
+        root /home/arthur/it-selfdev/ITMO-DevOps-course/basic/lab3/part-1/frontend; 
+
+        location / {
+            try_files $uri /index.html
+        }
+
+    }
+```
+
+### Шаг 4.2: Documents and alias
+А теперь настроим отдачу файлов по пути /cv/
+```nginx
+    server {
+        listen 443 ssl;
+        server_name portfolio.local;
+
+        root /home/arthur/it-selfdev/ITMO-DevOps-course/basic/lab3/part-1/frontend; 
+
+        location / {
+            try_files $uri /index.html;
+        }
+
+        location /cv/ {
+            alias /home/arthur/it-selfdev/ITMO-DevOps-course/basic/lab3/part-1/documents/;
+            add_header Content-Disposition 'attachment';
+        }
+    }
+```
 
 
 # Вместо вывода
