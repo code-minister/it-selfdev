@@ -59,11 +59,11 @@ sudo ln -s /home/arthur/it-selfdev/ITMO-DevOps-course/basic /etc/nginx/nginx.con
         }
 ```
 
-### Шаг 3: Создание SSL сертификата и настройка HTTPS
-Так как мы работаем на локалке, воспользуемся утилитой openssl
+### Шаг 3.1: Создание SSL сертификата и настройка HTTPS
+Так как мы работаем на локалке, воспользуемся утилитой openssl. И так как у нас несколько доменов, настроим SAN (Subject Alternative Name)
 ```bash
 sudo mkdir -p /etc/ssl/private /etc/ssl/certs
-sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/nginx-selfsigned.key -out /etc/ssl/certs/nginx-selfsigned.crt
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/nginx-selfsigned.key -out /etc/ssl/certs/nginx-selfsigned.crt -addext "subjectAltName=DNS:portfolio.local,DNS:api.portfolio.local"
 ```
 
 Далее настраиваем https:
@@ -77,6 +77,9 @@ server {
 
 Эти настройки будут применятся ко всем создаваемым далее серверам.
 
+### Шаг 3.2:
+
+
 
 
 # Вместо вывода
@@ -86,4 +89,4 @@ server {
 
 # Источники
 - https://nginx.org/ru/linux_packages.html
-- 
+- https://nginx.org/ru/docs/http/configuring_https_servers.html
