@@ -164,7 +164,24 @@ http {
     }
 ```
 
-### Шаг 6: 
+### Шаг 6: Сжатие
+Сжатие позволяет уменьшить размер передаваемых данных в 2 и более раз. При этом чувствительные данные вроде CSRF-токенов становятся подвержены атакам вроде [BREACH](https://en.wikipedia.org/wiki/BREACH), но у нас вообще никакой безопасности пока нет, так что воспользуемся.
+```nginx
+http {
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript;
+}
+```
+
+### Шаг 7: Логирование
+Логирование
+```nginx
+    log_format json_combined escape=json
+    '{"time":"$time_local", "ip":"$remote_addr", "request":"$request", '
+    '"status":"$status", "req_time":"$request_time", "up_time":"$upstream_response_time"}';
+    
+    access_log /home/arthur/it-selfdev/ITMO-DevOps-course/basic/lab3/part-1/log/access.json json_combined;
+```
 
 
 # Вместо вывода
