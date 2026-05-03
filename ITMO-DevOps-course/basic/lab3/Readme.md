@@ -60,7 +60,7 @@ sudo ln -s /home/arthur/it-selfdev/ITMO-DevOps-course/basic /etc/nginx/nginx.con
 ```
 
 ### Шаг 3.1: Создание SSL сертификата и настройка HTTPS
-Так как мы работаем на локалке, воспользуемся утилитой openssl. И так как у нас несколько доменов, настроим SAN (Subject Alternative Name)
+Так как мы работаем на локалке, воспользуемся утилитой openssl. И так как у нас несколько доменов, настроим SAN (Subject Alternative Name).
 ```bash
 sudo mkdir -p /etc/ssl/private /etc/ssl/certs
 sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/nginx-selfsigned.key -out /etc/ssl/certs/nginx-selfsigned.crt -addext "subjectAltName=DNS:portfolio.local,DNS:api.portfolio.local"
@@ -68,17 +68,33 @@ sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/privat
 
 Далее настраиваем https:
 ```nginx
-server {
+http{
+    ssl_certificate     /etc/ssl/certs/nginx-selfsigned.crt;
+    ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key;
+
+    server {
         listen 443 ssl;
-        ssl_certificate     /etc/ssl/certs/nginx-selfsigned.crt;
-        ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key;
+        ...
     }
+}
+```
+
+### Шаг 3.2: Оптимизация HTTPS
+SSL handshake достаточно ресурсозатратная операция, поэтому давайте оптимизируем её с помощью использования постоянных соединений (по умолчанию активно, но пропишем явно) и сохранения параметров SSL-сессии.
+```nginx
+http {
+    ssl_certificate     /etc/ssl/certs/nginx-selfsigned.crt;
+    ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key;
+
+    ssl_session_cache   shared:SSL:10m;
+    ssl_session_timeout 10m;
+
+    keepalive_timeout 75s
+
+}
 ```
 
 Эти настройки будут применятся ко всем создаваемым далее серверам.
-
-### Шаг 3.2:
-
 
 
 
