@@ -43,7 +43,7 @@ sudo apt install nginx
 1. Создаем бэкап исходного конфига, а вместо него создаем ссылку на файл в нашей директории
 ```bash
 sudo mv /etc/nginx/nginx.conf /etc/nginx/nginx.conf.backup
-sudo ln -s /home/arthur/it-selfdev/ITMO-DevOps-course/basic /etc/nginx/nginx.conf
+sudo ln -s /home/arthur/it-selfdev/ITMO-DevOps-course/basic/lab3/part-1/nginx.conf /etc/nginx/nginx.conf
 ```
 2. В начале конфигурационного файла записываем `user arthur;`, чтобы у процесса был доступ к файлам директории.
 
@@ -132,6 +132,39 @@ http {
         }
     }
 ```
+
+### Шаг 5: API
+
+Тут мы минимально обрабатываем CORS, создаем что-то похожее на load balancing и распределение нагрузки и перенаправляем запросы на API.
+
+```nginx
+
+    upstream backend_api {
+        server 127.0.0.1:3000;
+        server 127.0.0.1:3001;
+    }
+    server {
+        listen 443 ssl;
+        server_name api.portfolio.local;
+
+        location / {
+        
+            if ($http_origin ~* (https?://portfolio\.local$)) {
+                add_header 'Access-Control-Allow-Origin' "$http_origin" always;
+                add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+            }
+            if ($request_method = 'OPTIONS') { return 204; }
+
+            proxy_pass http://backend_api;
+            
+            proxy_cache api_cache;
+            proxy_cache_valid 200 10s;
+            proxy_cache_use_stale error timeout http_500; 
+        }
+    }
+```
+
+### Шаг 6: 
 
 
 # Вместо вывода
