@@ -6,9 +6,6 @@ const port = process.argv[2] || 3000;
 const requestHandler = (request, response) => {
     console.log(`Получен запрос на порт ${port}`);
     response.setHeader('Content-Type', 'application/json');
-    
-    // Для CORS (хотя NGINX это тоже перекрывает, оставляем для чистоты бэкенда)
-    response.setHeader('Access-Control-Allow-Origin', '*'); 
 
     response.writeHead(200);
     response.end(JSON.stringify({ 

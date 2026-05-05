@@ -10,23 +10,12 @@
     <!-- Ссылка для теста ALIAS -->
     <a href="/cv/resume.pdf" target="_blank"><button>Скачать мое резюме</button></a>
 
-    <div style="margin-top: 20px; padding: 10px; border: 1px solid black;">
+<div style="margin-top: 20px; padding: 10px; border: 1px solid black;">
         <h3>Ответ от API:</h3>
         <p id="api-response">Загрузка...</p>
     </div>
 
-    <script>
-        // Запрос к API через CORS
-        fetch('https://api.portfolio.local')
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('api-response').innerText = 
-                    `Сообщение: ${data.message} | Обработано портом: ${data.port}`;
-            })
-            .catch(err => {
-                document.getElementById('api-response').innerText = "Ошибка CORS или API недоступно!";
-                console.error(err);
-            });
-    </script>
+    <!-- Подключаем скрипт безопасно, как внешний файл -->
+    <script src="/app.js"></script>
 </body>
 </html>

@@ -55,7 +55,7 @@ sudo ln -s /home/arthur/it-selfdev/ITMO-DevOps-course/basic/lab3/part-1/nginx.co
     server {
         listen 80 default_server;
         server_name _;
-        return 301 https://$host/$request_uri;
+        return 301 https://$host$request_uri;
         }
 ```
 
@@ -101,13 +101,14 @@ http {
 Чёт всё запутано. Но вроде, так как у нас один файл index.html, сделаем вот так:
 ```nginx
     server {
-        listen 443 ssl http2;
+        listen 443 ssl;
+        http2 on;
         server_name portfolio.local;
 
         root /home/arthur/it-selfdev/ITMO-DevOps-course/basic/lab3/part-1/frontend; 
 
         location / {
-            try_files $uri /index.html
+            try_files $uri /index.html;
         }
 
     }
@@ -118,7 +119,8 @@ http {
 А теперь настроим отдачу файлов по пути /cv/
 ```nginx
     server {
-        listen 443 ssl http2;
+        listen 443 ssl;
+        http2 on;
         server_name portfolio.local;
 
         root /home/arthur/it-selfdev/ITMO-DevOps-course/basic/lab3/part-1/frontend; 
@@ -136,7 +138,7 @@ http {
 
 ### Шаг 5.1: API server
 
-Тут мы минимально обрабатываем CORS, создаем что-то похожее на load balancing и распределение нагрузки и перенаправляем запросы на API.
+Тут мы создаем что-то похожее на load balancing и распределение нагрузки и перенаправляем запросы на API.
 
 ```nginx
 http {
@@ -149,12 +151,6 @@ http {
         server_name api.portfolio.local;
 
         location / {
-        
-            if ($http_origin ~* (https?://portfolio\.local$)) {
-                add_header 'Access-Control-Allow-Origin' "$http_origin" always;
-                add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
-            }
-            if ($request_method = 'OPTIONS') { return 204; }
 
             proxy_pass http://backend_api;
             
@@ -189,18 +185,15 @@ http {
 
         location / {
         
-            if ($http_origin ~* (https?://portfolio\.local$)) {
-                add_header 'Access-Control-Allow-Origin' "$http_origin" always;
-                add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+            if ($request_method = 'OPTIONS') { 
+                return 204; 
             }
-            if ($request_method = 'OPTIONS') { return 204; }
 
             proxy_pass http://backend_api;
 
             proxy_cache api_cache;
             proxy_cache_valid 200 10s;
             proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504; 
-
             proxy_cache_lock on;
 
             
@@ -229,10 +222,83 @@ http {
     access_log /home/arthur/it-selfdev/ITMO-DevOps-course/basic/lab3/part-1/log/access.json json_combined;
 ```
 
+### Шаг 8: Безопасность 
+1. Добавим атрибуты `server_tokens off`, чтобы скрыть версию веб-сервера и усложнить поиск эксплойтов.
+2. Запрет доступа к скрытым файлам:
+```nginx
+http {
+    server {
+        location ~ /\.(?!well-known).* {
+            deny all;
+            access_log off;
+            log_not_found off;
+        }
+    }
+}
+```
+3. Защита от DoS/DDoS:
+```nginx
+http {
+    limit_req_zone $binary_remote_addr zone=mylimit:10m rate=10r/s;
+    limit_conn_zone $binary_remote_addr zone=addr:10m;
+
+    server {
+        location / {
+            limit_req zone=mylimit burst=20 nodelay;
+            limit_conn addr 15;
+
+        } 
+    }
+}
+```
+4. Защита от XSS и Clickjacking:
+> раньше для защиты от Clickjacking использовался X-Frame-Options: SAMEORIGIN, но сейчас, видимо, это встроено в CSP. Но добавим оба для обратной совместимости:
+```nginx
+http {
+    server {
+        add_header X-Frame-Options "SAMEORIGIN" always;
+
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline';frame-ancestors 'self';" always;
+    }
+}
+```
+
+5. И другие важные HTTP заголовки:
+```nginx
+http {
+    server {
+        # Prevent MIME type sniffing
+        add_header X-Content-Type-Options "nosniff" always;
+
+        # Force HTTPS for 1 year (переадресация всё равно нужна для первого запроса)
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+
+        # Control referrer information
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;  
+    }
+}
+```
+
+
+### Шаг 9: Запуск
+Проверяем конфиг, запускам бэкенд на портах, перезапускам nginx тестим:
+```bash
+sudo nginx -t
+
+node ~/projects/lab3/backend/server.js 3000
+node ~/projects/lab3/backend/server.js 3001
+nginx -s reload
+```
+
+![alt text](images/image.png)
+![alt text](images/image-1.png)
+
+И всё даже работает.
 
 # Вместо вывода
 Во-первых, я [настроил](https://code.visualstudio.com/docs/languages/markdown#_inserting-images-and-links-to-files) чтобы при вставке картинки автоматически падали в директорию images. И я очень рад.
-Во-вторых ...
+Во-вторых, как-то слишком много усилий для сайта, который печатает "Привет от бэкенда", ахах
+
 
 
 # Источники
