@@ -101,7 +101,7 @@ http {
 Чёт всё запутано. Но вроде, так как у нас один файл index.html, сделаем вот так:
 ```nginx
     server {
-        listen 443 ssl;
+        listen 443 ssl http2;
         server_name portfolio.local;
 
         root /home/arthur/it-selfdev/ITMO-DevOps-course/basic/lab3/part-1/frontend; 
@@ -112,12 +112,13 @@ http {
 
     }
 ```
+Также здесь мы указываем использовать http2
 
 ### Шаг 4.2: Documents and alias
 А теперь настроим отдачу файлов по пути /cv/
 ```nginx
     server {
-        listen 443 ssl;
+        listen 443 ssl http2;
         server_name portfolio.local;
 
         root /home/arthur/it-selfdev/ITMO-DevOps-course/basic/lab3/part-1/frontend; 
@@ -133,12 +134,12 @@ http {
     }
 ```
 
-### Шаг 5: API
+### Шаг 5.1: API server
 
 Тут мы минимально обрабатываем CORS, создаем что-то похожее на load balancing и распределение нагрузки и перенаправляем запросы на API.
 
 ```nginx
-
+http {
     upstream backend_api {
         server 127.0.0.1:3000;
         server 127.0.0.1:3001;
@@ -157,12 +158,57 @@ http {
 
             proxy_pass http://backend_api;
             
-            proxy_cache api_cache;
-            proxy_cache_valid 200 10s;
-            proxy_cache_use_stale error timeout http_500; 
         }
     }
+}
 ```
+
+
+### Шаг 5.2: Кэширование
+Так как мы не работаем с персональными данными, динамикой, а данные не меняются в случайный момент, может без танцев с бубном включить кэширование, где:
+- levels - параметр дробления кэша по папкам
+- keys_zone - область из оперативной памяти, которая хранит метаданные: ключи запросов, их статус и тд.
+- inactive=60m - время после которого кэш удаляется
+- use_temp_path=off - создание временных файлов в той же директории
+- proxy_cache_valid 200 10s - время, в течении которого кэш считается свежим и может использоваться вместо запроса на бэк
+- proxy_cache_use_stale - при определенном поведении можно вернуть значение из кэша
+- proxy_cache_lock on - если одновременно приходят идентичные запросы, то выполняется один, а другие ждут, чтобы взять значение из кэша
+
+```nginx
+http {
+    proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=api_cache:10m max_size=1g inactive=60m use_temp_path=off;
+
+    upstream backend_api {
+        server 127.0.0.1:3000;
+        server 127.0.0.1:3001;
+    }
+
+    server {
+        listen 443 ssl;
+        server_name api.portfolio.local;
+
+        location / {
+        
+            if ($http_origin ~* (https?://portfolio\.local$)) {
+                add_header 'Access-Control-Allow-Origin' "$http_origin" always;
+                add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+            }
+            if ($request_method = 'OPTIONS') { return 204; }
+
+            proxy_pass http://backend_api;
+
+            proxy_cache api_cache;
+            proxy_cache_valid 200 10s;
+            proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504; 
+
+            proxy_cache_lock on;
+
+            
+        }
+    }
+}
+```
+
 
 ### Шаг 6: Сжатие
 Сжатие позволяет уменьшить размер передаваемых данных в 2 и более раз. При этом чувствительные данные вроде CSRF-токенов становятся подвержены атакам вроде [BREACH](https://en.wikipedia.org/wiki/BREACH), но у нас вообще никакой безопасности пока нет, так что воспользуемся.
