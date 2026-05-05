@@ -1,4 +1,3 @@
-До выходных сделаю 🙏
 # Лабораторная №3
 
 ## Часть 1
@@ -295,12 +294,65 @@ nginx -s reload
 
 И всё даже работает.
 
+
+## Часть 2
+
+Будет взламывать сайт https://centr-gravirovki.spb.ru/ 
+
+### Path Traversal
+Раньше не работал с Burp Suite, но почему бы не познакомится с инструментом сейчас?
+Открываем сайт во встроенном браузере, находим в истории GET запрос и кидаем в repeater
+![alt text](images/image-2.png)
+
+Разные комбинации запросов "в лоб"
+```
+GET /../../../../../../etc/passwd
+GET /assets/galleries/%252e%252e%252f/etc/passwd
+GET /assets/galleries/%2e%2e/%2e%2e/%2e%2e/etc/passwd
+GET /assets/galleries/../../
+GET /assets/../../../../
+GET /assets/%2e%2e/%2e%2e/
+```
+![alt text](images/image-3.png)
+Возвращали либо ничего, либо ошибку 400
+
+### Перебор страниц
+Тоже попробуем сделать в burp
+![alt text](images/image-4.png)
+
+Загружаем файлик [common.txt](https://github.com/danielmiessler/SecLists/blob/master/Discovery/Web-Content/common.txt)
+![alt text](images/image-5.png)
+
+И запускаем перебор.
+
+Процесс шёл довольно медленно, поэтому давай всё-таки через ffuf:
+![alt text](images/image-6.png)
+Интересный ответ выдаёт curl https://centr-gravirovki.spb.ru/administrator
+```
+<html><head><script>function set_cookie(){var now = new Date();var time = now.getTime();time += 19360000 * 1000;now.setTime(time);document.cookie='beget=begetok'+'; expires='+now.toGMTString()+'; path=/';}set_cookie();location.reload();;</script></head><body></body></html>
+```
+Это похоже на антибот защиту, но если попробовать её обойти, то окажется что сервиса не существует.
+![alt text](images/image-7.png)
+
+### Перебор страниц 2
+Посчитаем за отдельную попытку перебор с заголовком beget=begetok:
+![alt text](images/image-8.png)
+
+Но тут уже ничего найти не удалось. Как итог, кроме robot.txt и sitemap.xml мы ничего не нашли
+
 # Вместо вывода
 Во-первых, я [настроил](https://code.visualstudio.com/docs/languages/markdown#_inserting-images-and-links-to-files) чтобы при вставке картинки автоматически падали в директорию images. И я очень рад.
 Во-вторых, как-то слишком много усилий для сайта, который печатает "Привет от бэкенда", ахах
+В-третьих, вторую часть со "взломом" уделили на так много внимания, но базовые уязвимости проверил 
 
 
 
 # Источники
 - https://nginx.org/ru/linux_packages.html
 - https://nginx.org/ru/docs/http/configuring_https_servers.html
+- https://reintech.io/blog/nginx-server-security-best-practices
+- https://www.linode.com/docs/guides/getting-started-with-nginx-part-4-tls-deployment-best-practices/
+- https://nginx.org/ru/docs/http/ngx_http_v2_module.html
+- https://nginx.org/ru/docs/http/ngx_http_gzip_module.html
+- https://nginx.org/ru/docs/http/ngx_http_core_module.html
+- https://nginx.org/ru/docs/http/ngx_http_limit_req_module.html
