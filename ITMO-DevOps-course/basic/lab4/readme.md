@@ -124,7 +124,8 @@ jobs:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@master
-      - name: Run tests but ignore failures
+      - uses: actions/setup-python@v5
+      - name: Run tests
         continue-on-error: true
         run: |
           echo "Running backend tests"
@@ -193,6 +194,7 @@ env:
 jobs:
   test:
     runs-on: self-hosted
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -211,16 +213,32 @@ jobs:
             echo "==> ${svc}"
             echo "Running tests for ${svc} (placeholder)"
           done
+
+  lint:
+    runs-on: self-hosted
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
       - name: Lint (placeholder)
         run: |
           echo "Running lint (placeholder)"
+
+  security_scan:
+    runs-on: self-hosted
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
       - name: Security scan (placeholder)
         run: |
           echo "Running security scan (placeholder)"
 
   build_and_push:
     runs-on: self-hosted
-    needs: test
+    timeout-minutes: 30
+    needs:
+      - test
+      - lint
+      - security_scan
     if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
@@ -256,6 +274,7 @@ jobs:
 
   deploy_test:
     runs-on: self-hosted
+    timeout-minutes: 15
     needs: build_and_push
     if: github.event_name == 'push'
     environment: test
@@ -449,7 +468,30 @@ jobs:
 Зависимость между джобами, то есть их линейный порядок, помогает не тратить ресурсы на сборку модулей, которые не прошли тесты. Также это создает условие для [Fail fast](https://about.gitlab.com/blog/how-to-keep-up-with-ci-cd-best-practices/), что позволяет быстрее исправлять ошибки. Однако малозатратные джобы можно запускать параллельно для ускорения выполнения.
 
 
-### 8. Отсутствие кэширование 
+#### 8. Отсутствие кэширование 
+BAD
+```
+- name: Run tests
+  run: 
+  ...
+
+```
+
+GOOD
+```
+test:
+  steps:
+    with:
+      python-version: "3.11"
+      cache: "pip"
+      cache-dependency-path: |
+        lab4/voting-app/services/backend/requirements.txt
+        lab4/voting-app/services/frontend/requirements.txt
+        lab4/voting-app/services/worker/requirements.txt
+```
+
+
+#### 9. Отсутствие ограничения по времени.
 BAD
 ```
 ...
@@ -457,18 +499,39 @@ BAD
 
 GOOD
 ```
-jobs:
-  test:
-  lint:
-  security_scan:
-  build_and_push:
-    needs:
-        - test
-        - lint
-        - security_scan
-  deploy_test:
-    needs: deploy_test
+timeout-minutes: 10
+timeout-minutes: 15
+...
 ```
+
+Если какой-то этап выполняется дольше, чем ожидается или вовсе зависает, это также указывается на проблему 
+
+
+### Шаг 3.4 Дополнительные практики
+В этом блоке я решил написать про bad practices, которые полезно упомянуть, но которые у меня не представлены или не исправлены.
+
+
+#### 1. Хардкод секретов, печать их в логах
+Тут всё очевидно, не нужно пушить пароли от БД и сид-фразу от криптокошелька в гит.  
+Используем .env файлы, GitHub secrets, Hashicorp Vault.
+
+
+#### 2. Наличие некачественных тестов
+Сюда относятся как раз:
+1. Flaky Tests
+2. Устаревшие тесты
+3. Тесты, зависящие от других тестов
+4. Слишком медленные тесты
+5. Brittle Tests - хрупкие тесты, проверяющие реализацию, а не поведение (например, что кнопка имеет синий цвет)
+
+
+#### 3. OverEngineering 
+Это моя любимая практика.   
+Подразумевает создания продукта, системы или решения, которые являются более сложными, чем необходимо для выполнения поставленных задач.  
+Это увеличивает time to market, continuous improvement cycle и денежные расходы.
+
+
+
 
 
 # Источники
