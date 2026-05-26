@@ -123,7 +123,7 @@ jobs:
             --set backend.image.tag="${IMAGE_TAG}" \
             --set frontend.image.repository="${DOCKERHUB_USERNAME}/voting-frontend" \
             --set frontend.image.tag="${IMAGE_TAG}" \
-            --set frontend.service.nodePort=30001 \
+            --set frontend.nodePort=30001 \
             --set worker.image.repository="${DOCKERHUB_USERNAME}/voting-worker" \
             --set worker.image.tag="${IMAGE_TAG}"
 
