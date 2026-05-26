@@ -106,14 +106,373 @@ cd /home/gha-runner/actions-runner/
 
 
 
-### Шаг 4: Написание Pipeline
+### Шаг 3.1: Создание bed-ci-cd
 ```yaml
+name: bad-ci-cd
+
+on: push
+
+permissions: write-all
+
+env:
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+  IMAGE_TAG: latest
+
+jobs:
+  build_deploy:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@master
+      - name: Run tests but ignore failures
+        continue-on-error: true
+        run: |
+          echo "Running backend tests"
+          echo "Running frontend tests"
+          echo "Running worker tests"
+      - name: Lint (placeholder)
+        run: |
+          echo "Running lint (placeholder)"
+      - name: Security scan (placeholder)
+        run: |
+          echo "Running security scan (placeholder)"
+      - name: Docker login
+        run: |
+          docker login -u "${DOCKERHUB_USERNAME}" -p "${DOCKERHUB_TOKEN}"
+      - name: Build and push backend
+        run: |
+          docker build --no-cache -t "${DOCKERHUB_USERNAME}/voting-backend:${IMAGE_TAG}" lab4/voting-app/services/backend
+          docker push "${DOCKERHUB_USERNAME}/voting-backend:${IMAGE_TAG}"
+      - name: Build and push frontend
+        run: |
+          docker build --no-cache -t "${DOCKERHUB_USERNAME}/voting-frontend:${IMAGE_TAG}" lab4/voting-app/services/frontend
+          docker push "${DOCKERHUB_USERNAME}/voting-frontend:${IMAGE_TAG}"
+      - name: Build and push worker
+        run: |
+          docker build --no-cache -t "${DOCKERHUB_USERNAME}/voting-worker:${IMAGE_TAG}" lab4/voting-app/services/worker
+          docker push "${DOCKERHUB_USERNAME}/voting-worker:${IMAGE_TAG}"
+      - name: Deploy straight to production
+        env:
+          KUBECONFIG: /home/gha-runner/.kube/config
+        run: |
+          sudo helm upgrade --install voting-app lab4/voting-app/helm \
+            --namespace default \
+            --set backend.image.repository="${DOCKERHUB_USERNAME}/voting-backend" \
+            --set backend.image.tag="${IMAGE_TAG}" \
+            --set frontend.image.repository="${DOCKERHUB_USERNAME}/voting-frontend" \
+            --set frontend.image.tag="${IMAGE_TAG}" \
+            --set worker.image.repository="${DOCKERHUB_USERNAME}/voting-worker" \
+            --set worker.image.tag="${IMAGE_TAG}"
 
 ```
 
+
+### Шаг 3.2: Создание good-ci-cd
+```yaml 
+name: good-ci-cd
+
+on:
+  push:
+    paths:
+      - "lab4/voting-app/services/**"
+  pull_request:
+    paths:
+      - "lab4/voting-app/services/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  test:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: |
+            lab4/voting-app/services/backend/requirements.txt
+            lab4/voting-app/services/frontend/requirements.txt
+            lab4/voting-app/services/worker/requirements.txt
+      - name: Install dependencies and run tests
+        shell: bash
+        run: |
+          services=(backend frontend worker)
+          for svc in "${services[@]}"; do
+            echo "==> ${svc}"
+            echo "Running tests for ${svc} (placeholder)"
+          done
+      - name: Lint (placeholder)
+        run: |
+          echo "Running lint (placeholder)"
+      - name: Security scan (placeholder)
+        run: |
+          echo "Running security scan (placeholder)"
+
+  build_and_push:
+    runs-on: self-hosted
+    needs: test
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: lab4/voting-app/services/backend
+          push: true
+          tags: ${{ env.DOCKERHUB_USERNAME }}/voting-backend:${{ env.IMAGE_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Build and push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: lab4/voting-app/services/frontend
+          push: true
+          tags: ${{ env.DOCKERHUB_USERNAME }}/voting-frontend:${{ env.IMAGE_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Build and push worker
+        uses: docker/build-push-action@v6
+        with:
+          context: lab4/voting-app/services/worker
+          push: true
+          tags: ${{ env.DOCKERHUB_USERNAME }}/voting-worker:${{ env.IMAGE_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy_test:
+    runs-on: self-hosted
+    needs: build_and_push
+    if: github.event_name == 'push'
+    environment: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - name: Deploy to test
+        env:
+          KUBECONFIG: /home/gha-runner/.kube/config
+        run: |
+          helm upgrade --install voting-app lab4/voting-app/helm \
+            --namespace test \
+            --create-namespace \
+            --atomic \
+            --wait \
+            --timeout 5m \
+            --set backend.image.repository="${DOCKERHUB_USERNAME}/voting-backend" \
+            --set backend.image.tag="${IMAGE_TAG}" \
+            --set frontend.image.repository="${DOCKERHUB_USERNAME}/voting-frontend" \
+            --set frontend.image.tag="${IMAGE_TAG}" \
+            --set worker.image.repository="${DOCKERHUB_USERNAME}/voting-worker" \
+            --set worker.image.tag="${IMAGE_TAG}"
+
+  deploy_prod:
+    runs-on: self-hosted
+    needs: deploy_test
+    if: github.event_name == 'push'
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - name: Deploy to production
+        env:
+          KUBECONFIG: /home/gha-runner/.kube/config
+        run: |
+          helm upgrade --install voting-app lab4/voting-app/helm \
+            --namespace prod \
+            --create-namespace \
+            --atomic \
+            --wait \
+            --timeout 5m \
+            --set backend.image.repository="${DOCKERHUB_USERNAME}/voting-backend" \
+            --set backend.image.tag="${IMAGE_TAG}" \
+            --set frontend.image.repository="${DOCKERHUB_USERNAME}/voting-frontend" \
+            --set frontend.image.tag="${IMAGE_TAG}" \
+            --set worker.image.repository="${DOCKERHUB_USERNAME}/voting-worker" \
+            --set worker.image.tag="${IMAGE_TAG}"
+```
+
+### Шаг 3.3: Описание практик
+
+#### 1. Использование нестабильных версий
+BAD
+```
+IMAGE_TAG: latest
+...
+uses: actions/checkout@master
+```
+
+GOOD
+```
+uses: actions/checkout@v4
+...
+set backend.image.tag="${IMAGE_TAG}
+set frontend.image.tag="${IMAGE_TAG}
+```
+
+Это предотвращает падение прода если новая версия ресурса окажется несовместима с проектом.
+
+
+#### 2. Ненужные срабатывания (слишком общий триггер)
+BAD
+```
+on: push
+```
+
+GOOD
+```
+on:
+  push:
+    paths:
+      - "lab4/voting-app/services/**"
+  pull_request:
+    paths:
+      - "lab4/voting-app/services/**"
+```
+
+
+Лишние срабатывания нагружают системы, используют ресурсы, усложняют логику и могут привести к ошибкам.
+#### 3. Монолитная джоба
+
+
+BAD
+```
+jobs:
+  build_deploy:
+    steps:
+      name: Run tests but ignore failures
+      name: Lint
+      name: Security scan
+      name: Docker login
+      name: Build and push backend
+      name: Build and push frontend
+      name: Build and push worker
+      name: Deploy straight to production
+```
+
+GOOD
+```
+jobs:
+  test:
+  build_and_push:
+  deploy_test:
+  deploy_prod:
+```
+
+Разделение логики помогает более явно показать логику, упрощает поиск ошибок и не выполнять лишние шаги.
+
+
+#### 4. Игнорирование тестов
+BAD
+```
+continue-on-error: true
+```
+
+GOOD
+```
+...
+```
+
+Иногда тесты игнорируются вследствие:
+1. нестабильных результатов (то зеленый, то красный по неизвестной причине, такие называются Flaky Tests)
+2. Legacy кода
+3. Необходимости хотфиксов
+4. Горящих дедлайнов
+
+Если не решить проблему должным образом и не убрать игнорирование, это может привести к негативным последствиям.
+
+#### 5. Игнорирования принципа наименьших привилегий
+BAD
+```
+sudo helm upgrade --install voting-app ...
+```
+
+GOOD
+```
+helm upgrade --install voting-app ...
+```
+
+Выдача прав сверх необходимых создаёт брешь в безопасности. Это относится также к правам пользователей, токенов и тд.
+
+
+#### 6. Отсутствие тестового окружения 
+BAD
+```
+...
+```
+
+GOOD
+```
+deploy_test:
+  ...
+```
+
+Строго говоря это не является best practices, но почти всегда наличие тестового окружения помогает выявить ошибки до запуска в прод даже для малых проектов. Также деплой в "прод" требует ручного подтверждения
+  
+Да, я считаю это киллер фича моей лабы
+
+#### 7.Избыток или отсутствие параллелизма
+BAD
+```
+...
+```
+
+GOOD
+```
+jobs:
+  test:
+  lint:
+  security_scan:
+  build_and_push:
+    needs:
+        - test
+        - lint
+        - security_scan
+  deploy_test:
+    needs: deploy_test
+```
+
+
+Зависимость между джобами, то есть их линейный порядок, помогает не тратить ресурсы на сборку модулей, которые не прошли тесты. Также это создает условие для [Fail fast](https://about.gitlab.com/blog/how-to-keep-up-with-ci-cd-best-practices/), что позволяет быстрее исправлять ошибки. Однако малозатратные джобы можно запускать параллельно для ускорения выполнения.
+
+
+### 8. Отсутствие кэширование 
+BAD
+```
+...
+```
+
+GOOD
+```
+jobs:
+  test:
+  lint:
+  security_scan:
+  build_and_push:
+    needs:
+        - test
+        - lint
+        - security_scan
+  deploy_test:
+    needs: deploy_test
+```
 
 
 # Источники
 - https://docs.docker.com/engine/install/ubuntu/
 - https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/add-runners
+- https://about.gitlab.com/blog/how-to-keep-up-with-ci-cd-best-practices/
 - 
