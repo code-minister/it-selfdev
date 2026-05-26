@@ -1,0 +1,43 @@
+name: bad-ci-cd
+
+on: push
+
+permissions: write-all
+
+env:
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+  IMAGE_TAG: latest
+
+jobs:
+  build_deploy:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@master
+      - name: Docker login
+        run: |
+          docker login -u "${DOCKERHUB_USERNAME}" -p "${DOCKERHUB_TOKEN}"
+      - name: Build and push backend
+        run: |
+          docker build --no-cache -t "${DOCKERHUB_USERNAME}/voting-backend:${IMAGE_TAG}" lab4/voting-app/services/backend
+          docker push "${DOCKERHUB_USERNAME}/voting-backend:${IMAGE_TAG}"
+      - name: Build and push frontend
+        run: |
+          docker build --no-cache -t "${DOCKERHUB_USERNAME}/voting-frontend:${IMAGE_TAG}" lab4/voting-app/services/frontend
+          docker push "${DOCKERHUB_USERNAME}/voting-frontend:${IMAGE_TAG}"
+      - name: Build and push worker
+        run: |
+          docker build --no-cache -t "${DOCKERHUB_USERNAME}/voting-worker:${IMAGE_TAG}" lab4/voting-app/services/worker
+          docker push "${DOCKERHUB_USERNAME}/voting-worker:${IMAGE_TAG}"
+      - name: Deploy straight to production
+        env:
+          KUBECONFIG: /home/gha-runner/.kube/config
+        run: |
+          helm upgrade --install voting-app lab4/voting-app/helm \
+            --namespace default \
+            --set backend.image.repository="${DOCKERHUB_USERNAME}/voting-backend" \
+            --set backend.image.tag="${IMAGE_TAG}" \
+            --set frontend.image.repository="${DOCKERHUB_USERNAME}/voting-frontend" \
+            --set frontend.image.tag="${IMAGE_TAG}" \
+            --set worker.image.repository="${DOCKERHUB_USERNAME}/voting-worker" \
+            --set worker.image.tag="${IMAGE_TAG}"

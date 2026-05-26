@@ -11,5 +11,10 @@ frontend:
     repository: c0demin1ster/voting-frontend
     tag: "v1"
 
+worker:
+  image:
+    repository: c0demin1ster/voting-worker
+    tag: "v1"
+
 database:
   storageSize: "1Gi"

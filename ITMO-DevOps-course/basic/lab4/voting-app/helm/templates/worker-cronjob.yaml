@@ -14,7 +14,7 @@ spec:
           restartPolicy: OnFailure 
           containers:
           - name: worker-app
-            image: c0demin1ster/voting-worker:v1
+            image: "{{ .Values.worker.image.repository }}:{{ .Values.worker.image.tag }}"
             
             envFrom:
             - secretRef:

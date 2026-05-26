@@ -104,7 +104,12 @@ cd /home/gha-runner/actions-runner/
 ./svc.sh start
 ```
 
-### Шаг 3
+
+
+### Шаг 4: Написание Pipeline
+```yaml
+
+```
 
 
 
