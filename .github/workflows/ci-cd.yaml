@@ -47,7 +47,8 @@ jobs:
           KUBECONFIG: /home/gha-runner/.kube/config
         run: |
           helm upgrade --install voting-app ITMO-DevOps-course/basic/lab4/voting-app/helm \
-            --namespace prod --create-namespace \
+            --namespace prod \
+            --create-namespace \
             --set backend.image.repository="${DOCKERHUB_USERNAME}/voting-backend" \
             --set backend.image.tag="${IMAGE_TAG}" \
             --set frontend.image.repository="${DOCKERHUB_USERNAME}/voting-frontend" \
