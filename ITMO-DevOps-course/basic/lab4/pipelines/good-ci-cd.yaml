@@ -3,10 +3,10 @@ name: good-ci-cd
 on:
   push:
     paths:
-      - "lab4/voting-app/services/**"
+      - "ITMO-DevOps-course/basic/lab4/voting-app/services/**"
   pull_request:
     paths:
-      - "lab4/voting-app/services/**"
+      - "ITMO-DevOps-course/basic/lab4/voting-app/services/**"
 
 permissions:
   contents: read
@@ -30,9 +30,9 @@ jobs:
           python-version: "3.11"
           cache: "pip"
           cache-dependency-path: |
-            lab4/voting-app/services/backend/requirements.txt
-            lab4/voting-app/services/frontend/requirements.txt
-            lab4/voting-app/services/worker/requirements.txt
+            ITMO-DevOps-course/basic/lab4/voting-app/services/backend/requirements.txt
+            ITMO-DevOps-course/basic/lab4/voting-app/services/frontend/requirements.txt
+            ITMO-DevOps-course/basic/lab4/voting-app/services/worker/requirements.txt
       - name: Install dependencies and run tests
         shell: bash
         run: |
@@ -78,7 +78,7 @@ jobs:
       - name: Build and push backend
         uses: docker/build-push-action@v6
         with:
-          context: lab4/voting-app/services/backend
+          context: ITMO-DevOps-course/basic/lab4/voting-app/services/backend
           push: true
           tags: ${{ env.DOCKERHUB_USERNAME }}/voting-backend:${{ env.IMAGE_TAG }}
           cache-from: type=gha
@@ -86,7 +86,7 @@ jobs:
       - name: Build and push frontend
         uses: docker/build-push-action@v6
         with:
-          context: lab4/voting-app/services/frontend
+          context: ITMO-DevOps-course/basic/lab4/voting-app/services/frontend
           push: true
           tags: ${{ env.DOCKERHUB_USERNAME }}/voting-frontend:${{ env.IMAGE_TAG }}
           cache-from: type=gha
@@ -94,7 +94,7 @@ jobs:
       - name: Build and push worker
         uses: docker/build-push-action@v6
         with:
-          context: lab4/voting-app/services/worker
+          context: ITMO-DevOps-course/basic/lab4/voting-app/services/worker
           push: true
           tags: ${{ env.DOCKERHUB_USERNAME }}/voting-worker:${{ env.IMAGE_TAG }}
           cache-from: type=gha
@@ -113,7 +113,7 @@ jobs:
         env:
           KUBECONFIG: /home/gha-runner/.kube/config
         run: |
-          helm upgrade --install voting-app lab4/voting-app/helm \
+          helm upgrade --install voting-app ITMO-DevOps-course/basic/lab4/voting-app/helm \
             --namespace test \
             --create-namespace \
             --atomic \
@@ -139,7 +139,7 @@ jobs:
         env:
           KUBECONFIG: /home/gha-runner/.kube/config
         run: |
-          helm upgrade --install voting-app lab4/voting-app/helm \
+          helm upgrade --install voting-app ITMO-DevOps-course/basic/lab4/voting-app/helm \
             --namespace prod \
             --create-namespace \
             --atomic \
