@@ -32,21 +32,21 @@ jobs:
           docker login -u "${DOCKERHUB_USERNAME}" -p "${DOCKERHUB_TOKEN}"
       - name: Build and push backend
         run: |
-          docker build --no-cache -t "${DOCKERHUB_USERNAME}/voting-backend:${IMAGE_TAG}" lab4/voting-app/services/backend
+          docker build --no-cache -t "${DOCKERHUB_USERNAME}/voting-backend:${IMAGE_TAG}" ITMO-DevOps-course/basic/lab4/voting-app/services/backend
           docker push "${DOCKERHUB_USERNAME}/voting-backend:${IMAGE_TAG}"
       - name: Build and push frontend
         run: |
-          docker build --no-cache -t "${DOCKERHUB_USERNAME}/voting-frontend:${IMAGE_TAG}" lab4/voting-app/services/frontend
+          docker build --no-cache -t "${DOCKERHUB_USERNAME}/voting-frontend:${IMAGE_TAG}" ITMO-DevOps-course/basic/lab4/voting-app/services/frontend
           docker push "${DOCKERHUB_USERNAME}/voting-frontend:${IMAGE_TAG}"
       - name: Build and push worker
         run: |
-          docker build --no-cache -t "${DOCKERHUB_USERNAME}/voting-worker:${IMAGE_TAG}" lab4/voting-app/services/worker
+          docker build --no-cache -t "${DOCKERHUB_USERNAME}/voting-worker:${IMAGE_TAG}" ITMO-DevOps-course/basic/lab4/voting-app/services/worker
           docker push "${DOCKERHUB_USERNAME}/voting-worker:${IMAGE_TAG}"
       - name: Deploy straight to production
         env:
           KUBECONFIG: /home/gha-runner/.kube/config
         run: |
-          sudo helm upgrade --install voting-app lab4/voting-app/helm \
+          sudo helm upgrade --install voting-app ITMO-DevOps-course/basic/lab4/voting-app/helm \
             --namespace prod \
             --set backend.image.repository="${DOCKERHUB_USERNAME}/voting-backend" \
             --set backend.image.tag="${IMAGE_TAG}" \
