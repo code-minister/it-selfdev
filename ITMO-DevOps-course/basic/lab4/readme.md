@@ -75,6 +75,9 @@ sudo -u gha-runner mkdir -p /home/gha-runner/.kube
 sudo cp /etc/rancher/k3s/k3s.yaml /home/gha-runner/.kube/config
 sudo chown gha-runner:gha-runner /home/gha-runner/.kube/config
 sudo chmod 600 /home/gha-runner/.kube/config
+
+export KUBECONFIG=~/.kube/config
+kubectl get pods -n test
 ```
 
 
@@ -530,6 +533,7 @@ timeout-minutes: 15
 Подразумевает создания продукта, системы или решения, которые являются более сложными, чем необходимо для выполнения поставленных задач.  
 Это увеличивает time to market, continuous improvement cycle и денежные расходы.
 
+### Шаг 4: Тест
 
 
 
