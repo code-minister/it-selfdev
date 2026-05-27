@@ -25,12 +25,13 @@ def vote():
 
 
     try:
+        delta = 2 if animal == 'giraffes' else 1
         conn = get_db_connection()
         cur = conn.cursor()
         # Обновляем счетчик
         cur.execute(
-            "UPDATE votes SET votes_count = votes_count + 1 WHERE animal_type = %s;",
-            (animal,)
+            "UPDATE votes SET votes_count = votes_count + %s WHERE animal_type = %s;",
+            (delta, animal)
         )
         conn.commit()
         cur.close()
