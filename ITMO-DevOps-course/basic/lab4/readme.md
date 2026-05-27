@@ -576,7 +576,7 @@ export VAULT_ADDR='http://127.0.0.1:8200'
 vault kv put secret/voting-app DOCKERHUB_USERNAME="USERNAME" DOCKERHUB_TOKEN="TOKEN"
 ```
 
-Обновляем good-ci-cd и тестим.
+Обновляем good-ci-cd и тестим. 
 
 И в этом моменте у меня просто перестали пулиться образы, а DockerHub открываться без ***. Хотя вот буквально только что всё работало. При чем собранные образы туда пушатся. То есть переменные из Hashicorp Vault берутся. Так я и не понял заблокирован DockerHub сейчас в РФ или нет.
 
