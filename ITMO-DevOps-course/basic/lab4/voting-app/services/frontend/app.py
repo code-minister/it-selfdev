@@ -14,7 +14,7 @@ HTML_TEMPLATE = """
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Котики, Собачки и Жирафы</title>
+    <title>Котики, Собачки и Жирафики</title>
     <style>
         body { background-color: {{ bg_color }}; font-family: Arial, sans-serif; text-align: center; padding-top: 50px; transition: background-color 0.5s; }
         .btn { padding: 15px 30px; font-size: 20px; margin: 10px; cursor: pointer; border-radius: 8px; border: none; color: white; font-weight: bold;}
@@ -34,13 +34,13 @@ HTML_TEMPLATE = """
     <div>
         <button class="btn btn-cat" onclick="vote('cats')">🐱 Котики</button>
         <button class="btn btn-dog" onclick="vote('dogs')">🐶 Собачки</button>
-        <button class="btn btn-giraffe" onclick="vote('giraffes')">🦒 Жирафы</button>
+        <button class="btn btn-giraffe" onclick="vote('giraffes')">🦒 Жирафики</button>
     </div>
 
     <div class="results">
         <p>Котики: <span id="cats-count">0</span></p>
         <p>Собачки: <span id="dogs-count">0</span></p>
-        <p>Жирафы: <span id="giraffes-count">0</span></p>
+        <p>Жирафики: <span id="giraffes-count">0</span></p>
     </div>
 
     <script>

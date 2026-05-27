@@ -14,7 +14,7 @@
 
 ### Pipeline
 
-Для симуляции работы CI\CD создадим два окружения: test и prod, где деплой во второе будет требовать подтверждения. Окружения будем разделять по namespace в helm и поддомену test. Раннер будет запущен локально
+Для симуляции работы CI\CD создадим два окружения: test и prod, где деплой во второе будет требовать подтверждения. Окружения будем разделять по namespace в helm и разным портам. Раннер будет запущен локально.
 
 > Написать про этапы
 
@@ -67,17 +67,26 @@ sudo passwd gha-runner
 #### Docker
 ```bash
 sudo usermod -aG docker gha-runner
-newgrp docker
 ```
 #### k3s
 ```bash
+sudo groupadd k8s-admins
+sudo usermod -aG k8s-admins $USER
+newgrp k8s-admins
+
+cat <<EOF | sudo tee -a /etc/rancher/k3s/config.yaml
+write-kubeconfig-mode: "0640"
+write-kubeconfig-group: "k8s-admins"
+EOF
+sudo systemctl restart k3s
+
 sudo -u gha-runner mkdir -p /home/gha-runner/.kube
 sudo cp /etc/rancher/k3s/k3s.yaml /home/gha-runner/.kube/config
 sudo chown gha-runner:gha-runner /home/gha-runner/.kube/config
 sudo chmod 600 /home/gha-runner/.kube/config
 
 export KUBECONFIG=~/.kube/config
-kubectl get pods -n test
+kubectl get nodes # Для теста
 ```
 
 
@@ -103,7 +112,7 @@ tar xzf ./actions-runner-linux-x64-2.334.0.tar.gz
 su -
 cd /home/gha-runner/actions-runner/
 
-./svc.sh install
+./svc.sh install gha-runner
 ./svc.sh start
 ```
 
@@ -528,8 +537,10 @@ timeout-minutes: 15
 
 
 
-### Шаг 4: Тест
-6
+### Шаг 4.1: Тест bad-ci-cd
+После 11 неудачных запусков плохой ci-cd наконец заработал и можно вставить использовать его по назначению.
+Итак, вот наше приложение в проде:
+![alt text](images/image-2.png)
 
 
 
