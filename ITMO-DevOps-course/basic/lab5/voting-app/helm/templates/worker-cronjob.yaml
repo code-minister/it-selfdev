@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: analytics-worker
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid 
+  successfulJobsHistoryLimit: 3
+  
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure 
+          {{- if .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml .Values.imagePullSecrets | nindent 12 }}
+          {{- end }}
+          containers:
+          - name: worker-app
+            image: "{{ .Values.worker.image.repository }}:{{ .Values.worker.image.tag }}"
+            
+            envFrom:
+            - secretRef:
+                name: postgres-secret
+            - configMapRef:
+                name: app-config
+            
+            volumeMounts:
+            - name: reports-data
+              mountPath: /app/reports
+          volumes:
+          - name: reports-data
+            persistentVolumeClaim:
+              claimName: reports-pvc

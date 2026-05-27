@@ -1,0 +1,27 @@
+backend:
+  replicaCount: 2
+  image:
+    repository: c0demin1ster/voting-backend
+    tag: "v1"
+
+# Optional: image pull secrets to authenticate to registries (e.g. Docker Hub).
+# Leave empty for public images.
+# Example:
+# imagePullSecrets:
+#   - name: dockerhub
+imagePullSecrets: []
+
+frontend:
+  replicaCount: 2
+  nodePort: 30050
+  image:
+    repository: c0demin1ster/voting-frontend
+    tag: "v1"
+
+worker:
+  image:
+    repository: c0demin1ster/voting-worker
+    tag: "v1"
+
+database:
+  storageSize: "1Gi"
