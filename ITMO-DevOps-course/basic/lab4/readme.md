@@ -187,10 +187,10 @@ name: good-ci-cd
 on:
   push:
     paths:
-      - "lab4/voting-app/services/**"
+      - "ITMO-DevOps-course/basic/lab4/voting-app/services/**"
   pull_request:
     paths:
-      - "lab4/voting-app/services/**"
+      - "ITMO-DevOps-course/basic/lab4/voting-app/services/**"
 
 permissions:
   contents: read
@@ -214,9 +214,9 @@ jobs:
           python-version: "3.11"
           cache: "pip"
           cache-dependency-path: |
-            lab4/voting-app/services/backend/requirements.txt
-            lab4/voting-app/services/frontend/requirements.txt
-            lab4/voting-app/services/worker/requirements.txt
+            ITMO-DevOps-course/basic/lab4/voting-app/services/backend/requirements.txt
+            ITMO-DevOps-course/basic/lab4/voting-app/services/frontend/requirements.txt
+            ITMO-DevOps-course/basic/lab4/voting-app/services/worker/requirements.txt
       - name: Install dependencies and run tests
         shell: bash
         run: |
@@ -262,7 +262,7 @@ jobs:
       - name: Build and push backend
         uses: docker/build-push-action@v6
         with:
-          context: lab4/voting-app/services/backend
+          context: ITMO-DevOps-course/basic/lab4/voting-app/services/backend
           push: true
           tags: ${{ env.DOCKERHUB_USERNAME }}/voting-backend:${{ env.IMAGE_TAG }}
           cache-from: type=gha
@@ -270,7 +270,7 @@ jobs:
       - name: Build and push frontend
         uses: docker/build-push-action@v6
         with:
-          context: lab4/voting-app/services/frontend
+          context: ITMO-DevOps-course/basic/lab4/voting-app/services/frontend
           push: true
           tags: ${{ env.DOCKERHUB_USERNAME }}/voting-frontend:${{ env.IMAGE_TAG }}
           cache-from: type=gha
@@ -278,7 +278,7 @@ jobs:
       - name: Build and push worker
         uses: docker/build-push-action@v6
         with:
-          context: lab4/voting-app/services/worker
+          context: ITMO-DevOps-course/basic/lab4/voting-app/services/worker
           push: true
           tags: ${{ env.DOCKERHUB_USERNAME }}/voting-worker:${{ env.IMAGE_TAG }}
           cache-from: type=gha
@@ -297,7 +297,7 @@ jobs:
         env:
           KUBECONFIG: /home/gha-runner/.kube/config
         run: |
-          helm upgrade --install voting-app lab4/voting-app/helm \
+          helm upgrade --install voting-app ITMO-DevOps-course/basic/lab4/voting-app/helm \
             --namespace test \
             --create-namespace \
             --atomic \
@@ -307,6 +307,7 @@ jobs:
             --set backend.image.tag="${IMAGE_TAG}" \
             --set frontend.image.repository="${DOCKERHUB_USERNAME}/voting-frontend" \
             --set frontend.image.tag="${IMAGE_TAG}" \
+            --set frontend.nodePort=30001 \
             --set worker.image.repository="${DOCKERHUB_USERNAME}/voting-worker" \
             --set worker.image.tag="${IMAGE_TAG}"
 
@@ -322,7 +323,7 @@ jobs:
         env:
           KUBECONFIG: /home/gha-runner/.kube/config
         run: |
-          helm upgrade --install voting-app lab4/voting-app/helm \
+          helm upgrade --install voting-app ITMO-DevOps-course/basic/lab4/voting-app/helm \
             --namespace prod \
             --create-namespace \
             --atomic \
@@ -332,6 +333,7 @@ jobs:
             --set backend.image.tag="${IMAGE_TAG}" \
             --set frontend.image.repository="${DOCKERHUB_USERNAME}/voting-frontend" \
             --set frontend.image.tag="${IMAGE_TAG}" \
+            --set frontend.nodePort=30002 \
             --set worker.image.repository="${DOCKERHUB_USERNAME}/voting-worker" \
             --set worker.image.tag="${IMAGE_TAG}"
 ```
@@ -550,6 +552,31 @@ timeout-minutes: 15
 
 ### Шаг 4.2 Тест good-ci-cd
 А теперь давай сделаем, чтобы за Жирафиков прибавлялось по два голоса. 
+Открываем проект на порту для test окружения:
+![alt text](images/image-4.png)
+И, ничего себе, оно тоже работает! При этом prod не упал, а деплой в него ждет подтверждения:
+![alt text](images/image-5.png)
+
+Подтверждаем
+![alt text](images/image-6.png)
+И прод тоже работает. 
+
+
+
+
+
+## Часть 2
+Идем дальше. Настраиваем Hashicorp Vault
+```bash
+docker run --cap-add=IPC_LOCK -d --name=vault -p 8200:8200 -e 'VAULT_DEV_ROOT_TOKEN_ID=myroot' hashicorp/vault
+
+
+docker exec -it vault sh
+export VAULT_ADDR='http://127.0.0.1:8200'
+vault kv put secret/voting-app DOCKERHUB_USERNAME="USERNAME" DOCKERHUB_TOKEN="TOKEN"
+```
+
+Обновляем good-ci-cd и тестим
 
 
 # Источники

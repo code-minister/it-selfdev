@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - "ITMO-DevOps-course/basic/lab4/voting-app/services/**"
+      - "ITMO-DevOps-course/basic/lab4/voting-app/helm/**"
   pull_request:
     paths:
       - "ITMO-DevOps-course/basic/lab4/voting-app/services/**"
@@ -16,8 +17,9 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
   IMAGE_TAG: ${{ github.sha }}
+  VAULT_URL: http://localhost:8200
+  VAULT_TOKEN: "myroot"
 
 jobs:
   test:
@@ -70,33 +72,47 @@ jobs:
     if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
+
+      - name: Fetch Docker Credentials from Vault
+        uses: hashicorp/vault-action@v3
+        with:
+          url: ${{ env.VAULT_URL }}
+          token: ${{ env.VAULT_TOKEN }}
+          tlsSkipVerify: true
+          secrets: |
+            secret/data/voting-app DOCKERHUB_USERNAME | DOCKER_USER ;
+            secret/data/voting-app DOCKERHUB_TOKEN | DOCKER_TOKEN ;
+
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ env.DOCKER_USER }}
+          password: ${{ env.DOCKER_TOKEN }}
+
       - name: Build and push backend
         uses: docker/build-push-action@v6
         with:
           context: ITMO-DevOps-course/basic/lab4/voting-app/services/backend
           push: true
-          tags: ${{ env.DOCKERHUB_USERNAME }}/voting-backend:${{ env.IMAGE_TAG }}
+          tags: ${{ env.DOCKER_USER }}/voting-backend:${{ env.IMAGE_TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
       - name: Build and push frontend
         uses: docker/build-push-action@v6
         with:
           context: ITMO-DevOps-course/basic/lab4/voting-app/services/frontend
           push: true
-          tags: ${{ env.DOCKERHUB_USERNAME }}/voting-frontend:${{ env.IMAGE_TAG }}
+          tags: ${{ env.DOCKER_USER }}/voting-frontend:${{ env.IMAGE_TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
       - name: Build and push worker
         uses: docker/build-push-action@v6
         with:
           context: ITMO-DevOps-course/basic/lab4/voting-app/services/worker
           push: true
-          tags: ${{ env.DOCKERHUB_USERNAME }}/voting-worker:${{ env.IMAGE_TAG }}
+          tags: ${{ env.DOCKER_USER }}/voting-worker:${{ env.IMAGE_TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -109,9 +125,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: azure/setup-helm@v4
+
+      - name: Fetch Username from Vault
+        uses: hashicorp/vault-action@v3
+        with:
+          url: ${{ env.VAULT_URL }}
+          token: ${{ env.VAULT_TOKEN }}
+          tlsSkipVerify: true
+          secrets: |
+            secret/data/voting-app DOCKERHUB_USERNAME | DOCKER_USER ;
+
       - name: Deploy to test
         env:
-          KUBECONFIG: /home/gha-runner/.kube/config
+          KUBECONFIG: /etc/rancher/k3s/k3s.yaml
         run: |
           helm upgrade --install voting-app ITMO-DevOps-course/basic/lab4/voting-app/helm \
             --namespace test \
@@ -119,12 +145,12 @@ jobs:
             --atomic \
             --wait \
             --timeout 5m \
-            --set backend.image.repository="${DOCKERHUB_USERNAME}/voting-backend" \
+            --set backend.image.repository="${{ env.DOCKER_USER }}/voting-backend" \
             --set backend.image.tag="${IMAGE_TAG}" \
-            --set frontend.image.repository="${DOCKERHUB_USERNAME}/voting-frontend" \
+            --set frontend.image.repository="${{ env.DOCKER_USER }}/voting-frontend" \
             --set frontend.image.tag="${IMAGE_TAG}" \
             --set frontend.nodePort=30001 \
-            --set worker.image.repository="${DOCKERHUB_USERNAME}/voting-worker" \
+            --set worker.image.repository="${{ env.DOCKER_USER }}/voting-worker" \
             --set worker.image.tag="${IMAGE_TAG}"
 
   deploy_prod:
@@ -135,9 +161,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: azure/setup-helm@v4
+
+      - name: Fetch Username from Vault
+        uses: hashicorp/vault-action@v3
+        with:
+          url: ${{ env.VAULT_URL }}
+          token: ${{ env.VAULT_TOKEN }}
+          tlsSkipVerify: true
+          secrets: |
+            secret/data/voting-app DOCKERHUB_USERNAME | DOCKER_USER ;
+
       - name: Deploy to production
         env:
-          KUBECONFIG: /home/gha-runner/.kube/config
+          KUBECONFIG: /etc/rancher/k3s/k3s.yaml
         run: |
           helm upgrade --install voting-app ITMO-DevOps-course/basic/lab4/voting-app/helm \
             --namespace prod \
@@ -145,10 +181,10 @@ jobs:
             --atomic \
             --wait \
             --timeout 5m \
-            --set backend.image.repository="${DOCKERHUB_USERNAME}/voting-backend" \
+            --set backend.image.repository="${{ env.DOCKER_USER }}/voting-backend" \
             --set backend.image.tag="${IMAGE_TAG}" \
-            --set frontend.image.repository="${DOCKERHUB_USERNAME}/voting-frontend" \
+            --set frontend.image.repository="${{ env.DOCKER_USER }}/voting-frontend" \
             --set frontend.image.tag="${IMAGE_TAG}" \
-            --set frontend.service.nodePort=30002 \
-            --set worker.image.repository="${DOCKERHUB_USERNAME}/voting-worker" \
+            --set frontend.nodePort=30002 \
+            --set worker.image.repository="${{ env.DOCKER_USER }}/voting-worker" \
             --set worker.image.tag="${IMAGE_TAG}"

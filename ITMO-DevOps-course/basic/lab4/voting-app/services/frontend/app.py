@@ -17,6 +17,7 @@ HTML_TEMPLATE = """
     <title>Котики, Собачки и Жирафики</title>
     <style>
         body { background-color: {{ bg_color }}; font-family: Arial, sans-serif; text-align: center; padding-top: 50px; transition: background-color 0.5s; }
+        .vote-buttons { display: flex; flex-direction: column; align-items: center; }
         .btn { padding: 15px 30px; font-size: 20px; margin: 10px; cursor: pointer; border-radius: 8px; border: none; color: white; font-weight: bold;}
         .btn-cat { background-color: #2196F3; }
         .btn-cat:hover { background-color: #0b7dda; }
@@ -31,7 +32,7 @@ HTML_TEMPLATE = """
 <body>
     <h1>Голосование: Выбери любимца</h1>
     
-    <div>
+    <div class="vote-buttons">
         <button class="btn btn-cat" onclick="vote('cats')">🐱 Котики</button>
         <button class="btn btn-dog" onclick="vote('dogs')">🐶 Собачки</button>
         <button class="btn btn-giraffe" onclick="vote('giraffes')">🦒 Жирафики</button>
