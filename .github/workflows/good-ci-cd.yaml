@@ -137,7 +137,7 @@ jobs:
 
       - name: Deploy to test
         env:
-          KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+          KUBECONFIG: /home/gha-runner/.kube/config
         run: |
           helm upgrade --install voting-app ITMO-DevOps-course/basic/lab4/voting-app/helm \
             --namespace test \
@@ -173,7 +173,7 @@ jobs:
 
       - name: Deploy to production
         env:
-          KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+          KUBECONFIG: /home/gha-runner/.kube/config
         run: |
           helm upgrade --install voting-app ITMO-DevOps-course/basic/lab4/voting-app/helm \
             --namespace prod \

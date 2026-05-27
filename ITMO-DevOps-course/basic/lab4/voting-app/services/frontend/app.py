@@ -72,7 +72,7 @@ HTML_TEMPLATE = """
 
 @app.route('/')
 def index():
-    # Отдаем HTML, подставляя цвет фона из переменной окружения
+    # Отдаем HTML, подставляя цвет фона из переменной окружения.
     return render_template_string(HTML_TEMPLATE, bg_color=BG_COLOR)
 
 # --- ПРОКСИ-МАРШРУТЫ (Frontend -> Backend) ---
