@@ -180,6 +180,7 @@ jobs:
             --create-namespace \
             --atomic \
             --wait \
+            --set imagePullSecrets[0].name=dockerhub \
             --timeout 5m \
             --set backend.image.repository="${{ env.DOCKER_USER }}/voting-backend" \
             --set backend.image.tag="${IMAGE_TAG}" \

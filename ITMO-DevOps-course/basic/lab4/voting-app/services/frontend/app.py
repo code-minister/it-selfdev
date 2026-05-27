@@ -89,7 +89,7 @@ def proxy_vote():
 @app.route('/api/results', methods=['GET'])
 def proxy_results():
     try:
-        # Запрашиваем данные у внутреннего Backend'а
+        # Запрашиваем данные у внутреннего Backend'а 
         response = requests.get(f"{BACKEND_URL}/results", timeout=5)
         return jsonify(response.json()), response.status_code
     except Exception as e:
