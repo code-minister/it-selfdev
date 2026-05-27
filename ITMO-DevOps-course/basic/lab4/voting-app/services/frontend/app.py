@@ -96,5 +96,5 @@ def proxy_results():
         return jsonify({"error": "Cannot connect to backend"}), 500
 
 if __name__ == '__main__':
-    # Фронтенд запускается на порту 3000
+    # Фронтенд запускается на порту 3000.
     app.run(host='0.0.0.0', port=3000)
